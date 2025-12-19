@@ -44,4 +44,4 @@ An interactive, physics-based photo gallery built with **p5.js** and **Matter.js
 This project is open source and available under the [MIT License](LICENSE).
 
 ---
-*Created by [Your Name]*
+*Created by Raunak chaurasiya*
