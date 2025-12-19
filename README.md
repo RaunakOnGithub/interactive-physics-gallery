@@ -2,7 +2,7 @@
 
 An interactive, physics-based photo gallery built with **p5.js** and **Matter.js**. This project breaks away from static grids, allowing users to interact with "memories" as if they were physical polaroids scattered on a table.
 
-🔗 **[Live Demo](YOUR_LIVE_LINK_HERE)**
+🔗 **[Live Demo](https://interactive-gallery-section.netlify.app/)**
 
 [![image.png](https://i.postimg.cc/wvJcXLzZ/image.png)](https://postimg.cc/CBhqYZzs)
 
