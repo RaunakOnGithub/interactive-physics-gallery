@@ -1,141 +1,3 @@
-
-// const Engine = Matter.Engine;
-// const World = Matter.World;
-// const Bodies = Matter.Bodies;
-// const Body = Matter.Body;
-// const Mouse = Matter.Mouse;
-// const MouseConstraint = Matter.MouseConstraint;
-
-// let engine;
-// let items = [];
-// let mConstraint; // Global variable for mouse interaction
-
-// function setup() {
-//   createCanvas(window.innerWidth, window.innerHeight);
-//   engine = Engine.create();
-//   engine.world.gravity.y = 0; // Floating (Zero Gravity)
-
-//   addBoundaries();
-
-//   // Create 12 items
-//   for (let i = 0; i < 12; i++) {
-//     let x = random(100, width - 100);
-//     let y = random(100, height - 100);
-//     items.push(new Item(x, y, `./assets/img${i + 1}.jpg`));
-//   }
-
-//   // --- NEW: Add Mouse Constraint for "Real" Dragging ---
-//   // This lets you actually grab the cards like real objects
-//   let canvasMouse = Mouse.create(document.body); // Use body to catch events over divs
-//   canvasMouse.pixelRatio = pixelDensity(); // Fix for high-res screens
-  
-//   let options = {
-//     mouse: canvasMouse,
-//     constraint: {
-//       stiffness: 0.2,
-//       render: { visible: false }
-//     }
-//   };
-//   mConstraint = MouseConstraint.create(engine, options);
-//   World.add(engine.world, mConstraint);
-// }
-
-// function addBoundaries() {
-//   const thickness = 50;
-//   World.add(engine.world, [
-//     Bodies.rectangle(width / 2, -thickness / 2, width, thickness, { isStatic: true }),
-//     Bodies.rectangle(width / 2, height + thickness / 2, width, thickness, { isStatic: true }),
-//     Bodies.rectangle(-thickness / 2, height / 2, thickness, height, { isStatic: true }),
-//     Bodies.rectangle(width + thickness / 2, height / 2, thickness, height, { isStatic: true }),
-//   ]);
-// }
-
-// function draw() {
-//   background("black");
-//   Engine.update(engine);
-
-//   // Variable to track which item is currently being hovered/dragged
-//   let hoveredItem = null;
-
-//   items.forEach((item) => {
-//     // Check distance for "Hover Repel" effect
-//     let d = dist(mouseX, mouseY, item.body.position.x, item.body.position.y);
-    
-//     // --- SMOOTHNESS FIX: Gradient Force ---
-//     // Instead of a hard On/Off, we scale force by distance.
-//     if (d < 200) {
-//       hoveredItem = item; // Mark this item as hovered for Z-index
-
-//       let forceVector = {
-//         x: item.body.position.x - mouseX,
-//         y: item.body.position.y - mouseY,
-//       };
-      
-//       // Normalize
-//       let len = Math.sqrt(forceVector.x * forceVector.x + forceVector.y * forceVector.y);
-//       forceVector.x /= len;
-//       forceVector.y /= len;
-
-//       // Force gets stronger as you get closer (Map distance 0-200 to strength 0.2-0)
-//       // We clamp 'd' so force doesn't explode if d is near 0
-//       let forceMagnitude = map(d, 0, 200, 0.05, 0); 
-      
-//       // Only apply repel force if we aren't currently dragging it
-//       if (mConstraint.body !== item.body) {
-//          Body.applyForce(item.body, item.body.position, {
-//             x: forceVector.x * forceMagnitude,
-//             y: forceVector.y * forceMagnitude
-//          });
-//       }
-//     }
-    
-//     item.update(hoveredItem === item);
-//   });
-// }
-
-// class Item {
-//   constructor(x, y, imagePath) {
-//     let options = {
-//       frictionAir: 0.075, // High friction = smooth "sliding on ice" stop
-//       restitution: 0.2,   // Low bounce
-//       density: 0.001,
-//       angle: Math.random() * Math.PI * 2,
-//     };
-//     this.body = Bodies.rectangle(x, y, 200, 225, options);
-//     World.add(engine.world, this.body);
-
-//     this.div = document.createElement("div");
-//     this.div.className = "item";
-    
-//     const img = document.createElement("img");
-//     img.src = imagePath;
-//     // Prevent default browser dragging of the image itself
-//     img.ondragstart = () => false; 
-    
-//     this.div.appendChild(img);
-//     document.body.appendChild(this.div);
-//   }
-
-//   update(isHovered) {
-//     const x = this.body.position.x - 100;
-//     const y = this.body.position.y - 112.5;
-    
-//     // --- STACKING FIX: Z-Index ---
-//     // If this item is hovered (or being dragged), bring it to front (z-index 100)
-//     // Otherwise put it back to layer 10
-//     if (isHovered || this.body === mConstraint.body) {
-//         this.div.style.zIndex = 100;
-//         // Optional: slight scale up for effect
-//         this.div.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${this.body.angle}rad) scale(1.05)`;
-//         this.div.style.boxShadow = "0px 20px 40px rgba(0,0,0,0.5)"; // Add shadow when lifted
-//     } else {
-//         this.div.style.zIndex = 10;
-//         this.div.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${this.body.angle}rad) scale(1)`;
-//         this.div.style.boxShadow = "none";
-//     }
-//   }
-// }
-
 const Engine = Matter.Engine;
 const World = Matter.World;
 const Bodies = Matter.Bodies;
@@ -146,43 +8,90 @@ const MouseConstraint = Matter.MouseConstraint;
 let engine;
 let items = [];
 let mConstraint;
+let boundaries = []; // Boundaries ko track karne ke liye array
 
 function setup() {
   createCanvas(window.innerWidth, window.innerHeight);
   engine = Engine.create();
-  engine.world.gravity.y = 0; // Zero Gravity
+  engine.world.gravity.y = 0;
 
   addBoundaries();
 
-  for (let i = 0; i < 12; i++) {
+  // --- MOBILE DETECTION ---
+  // Agar screen 600px se chhoti hai, toh mobile maano
+  let isMobile = window.innerWidth < 600;
+
+  // Mobile par kam items (8), Desktop par zyada (12-15)
+  let itemCount = isMobile ? 8 : 12;
+
+  for (let i = 0; i < itemCount; i++) {
     let x = random(100, width - 100);
     let y = random(100, height - 100);
-    items.push(new Item(x, y, `./assets/img${i + 1}.jpg`));
+
+    // Mobile par chhota size, Desktop par bada
+    // Format: Item(x, y, imagePath, isMobile)
+    items.push(new Item(x, y, `./assets/img${i + 1}.jpg`, isMobile));
   }
 
-  // Mouse Interaction (Drag & Drop)
+  // Mouse Interaction
   let canvasMouse = Mouse.create(document.body);
   canvasMouse.pixelRatio = pixelDensity();
-  
+
   let options = {
     mouse: canvasMouse,
     constraint: {
       stiffness: 0.2,
-      render: { visible: false }
-    }
+      render: { visible: false },
+    },
   };
   mConstraint = MouseConstraint.create(engine, options);
   World.add(engine.world, mConstraint);
 }
 
 function addBoundaries() {
+  // Purani boundaries hatao (agar resize hua ho)
+  if (boundaries.length > 0) {
+    World.remove(engine.world, boundaries);
+    boundaries = [];
+  }
+
   const thickness = 50;
-  World.add(engine.world, [
-    Bodies.rectangle(width / 2, -thickness / 2, width, thickness, { isStatic: true }),
-    Bodies.rectangle(width / 2, height + thickness / 2, width, thickness, { isStatic: true }),
-    Bodies.rectangle(-thickness / 2, height / 2, thickness, height, { isStatic: true }),
-    Bodies.rectangle(width + thickness / 2, height / 2, thickness, height, { isStatic: true }),
-  ]);
+
+  // Nayi boundaries banao
+  let floor = Bodies.rectangle(
+    width / 2,
+    height + thickness / 2,
+    width,
+    thickness,
+    { isStatic: true }
+  );
+  let ceiling = Bodies.rectangle(width / 2, -thickness / 2, width, thickness, {
+    isStatic: true,
+  });
+  let leftWall = Bodies.rectangle(
+    -thickness / 2,
+    height / 2,
+    thickness,
+    height,
+    { isStatic: true }
+  );
+  let rightWall = Bodies.rectangle(
+    width + thickness / 2,
+    height / 2,
+    thickness,
+    height,
+    { isStatic: true }
+  );
+
+  boundaries.push(floor, ceiling, leftWall, rightWall);
+  World.add(engine.world, boundaries);
+}
+
+// --- WINDOW RESIZE FUNCTION ---
+// Jab user browser chhota/bada karega, ye chalega
+function windowResized() {
+  resizeCanvas(window.innerWidth, window.innerHeight);
+  addBoundaries(); // Deewar wapas set karo nayi screen ke hisaab se
 }
 
 function draw() {
@@ -190,98 +99,95 @@ function draw() {
   Engine.update(engine);
 
   items.forEach((item) => {
-    // Check if mouse is close (for the "hover" effect)
     let d = dist(mouseX, mouseY, item.body.position.x, item.body.position.y);
-    let isHovered = d < 200;
+    let isHovered = d < item.w; // Interaction radius based on item width
 
-    // --- HOVER REPEL FORCE ---
-    // Only push if we are NOT currently dragging this specific item
     if (isHovered && mConstraint.body !== item.body) {
       let forceVector = {
         x: item.body.position.x - mouseX,
         y: item.body.position.y - mouseY,
       };
-      
-      let len = Math.sqrt(forceVector.x * forceVector.x + forceVector.y * forceVector.y);
+      let len = Math.sqrt(
+        forceVector.x * forceVector.x + forceVector.y * forceVector.y
+      );
       forceVector.x /= len;
       forceVector.y /= len;
-
-      let forceMagnitude = map(d, 0, 200, 0.05, 0); 
-      
+      let forceMagnitude = map(d, 0, item.w, 0.05, 0);
       Body.applyForce(item.body, item.body.position, {
         x: forceVector.x * forceMagnitude,
-        y: forceVector.y * forceMagnitude
+        y: forceVector.y * forceMagnitude,
       });
     }
-    
-    // Pass 'isHovered' and 'isDragged' status to update function
     item.update(isHovered, mConstraint.body === item.body);
   });
 }
 
-// --- NEW FUNCTION: ROTATE ON SCROLL ---
 function mouseWheel(event) {
-  // Check which item is under the mouse
   items.forEach((item) => {
-    if (dist(mouseX, mouseY, item.body.position.x, item.body.position.y) < 150) {
-        // Apply rotation based on scroll direction
-        // event.delta returns + or - depending on scroll direction
-        let rotationSpeed = 0.15; 
-        let newAngle = item.body.angle + (event.delta > 0 ? rotationSpeed : -rotationSpeed);
-        
-        // Use Matter.Body.setAngle to instantly rotate
-        Body.setAngle(item.body, newAngle);
-        
-        // Stop the browser from scrolling the page
-        return false; 
+    if (
+      dist(mouseX, mouseY, item.body.position.x, item.body.position.y) < item.w
+    ) {
+      let rotationSpeed = 0.15;
+      let newAngle =
+        item.body.angle + (event.delta > 0 ? rotationSpeed : -rotationSpeed);
+      Body.setAngle(item.body, newAngle);
+      return false;
     }
   });
 }
 
 class Item {
-  constructor(x, y, imagePath) {
+  constructor(x, y, imagePath, isMobile) {
+    // --- SIZE LOGIC ---
+    // Desktop: 200x225, Mobile: 120x135 (approx 60% size)
+    this.w = isMobile ? 120 : 200;
+    this.h = isMobile ? 135 : 225;
+
     let options = {
       frictionAir: 0.075,
       restitution: 0.25,
       density: 0.001,
       angle: Math.random() * Math.PI * 2,
     };
-    this.body = Bodies.rectangle(x, y, 200, 225, options);
+
+    // Physics body ab dynamic size lega
+    this.body = Bodies.rectangle(x, y, this.w, this.h, options);
     World.add(engine.world, this.body);
 
     this.div = document.createElement("div");
     this.div.className = "item";
-    
+
+    // JS se width/height set kar rahe hain taaki physics se match kare
+    this.div.style.width = `${this.w}px`;
+    this.div.style.height = `${this.h}px`;
+
     const img = document.createElement("img");
     img.src = imagePath;
-    img.ondragstart = () => false; 
+    img.ondragstart = () => false;
     this.div.appendChild(img);
     document.body.appendChild(this.div);
   }
 
   update(isHovered, isDragged) {
-    const x = this.body.position.x - 100;
-    const y = this.body.position.y - 112.5;
-    
-    // Logic: If dragged, it's definitely on top (zIndex 100)
-    // If hovered, it pops up slightly (zIndex 50)
-    // Otherwise, it sits back (zIndex 10)
-    
+    // Center offset adjust karo size ke hisaab se
+    const x = this.body.position.x - this.w / 2;
+    const y = this.body.position.y - this.h / 2;
+
     if (isDragged) {
-        this.div.style.zIndex = 100;
-        this.div.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${this.body.angle}rad) scale(1.1)`;
-        this.div.style.boxShadow = "0px 30px 60px rgba(196, 164, 132, 0.3)";
-        this.div.style.cursor = "grabbing";
+      this.div.style.zIndex = 100;
+      this.div.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${this.body.angle}rad) scale(1.1)`;
+      this.div.style.boxShadow = "0px 30px 60px rgba(0,0,0,0.6)";
+      this.div.style.cursor = "grabbing";
     } else if (isHovered) {
-        this.div.style.zIndex = 50;
-        this.div.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${this.body.angle}rad) scale(1.05)`;
-        this.div.style.boxShadow = "0px 20px 40px rgba(0,0,0,0.4)";
-        this.div.style.cursor = "grab";
+      this.div.style.zIndex = 50;
+      this.div.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${this.body.angle}rad) scale(1.05)`;
+      this.div.style.boxShadow = "0px 20px 40px rgba(0,0,0,0.4)";
+      this.div.style.cursor = "grab";
     } else {
-        this.div.style.zIndex = 10;
-        this.div.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${this.body.angle}rad) scale(1)`;
-        this.div.style.boxShadow = "none";
-        this.div.style.cursor = "default";
+      this.div.style.zIndex = 10;
+      this.div.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${this.body.angle}rad) scale(1)`;
+      this.div.style.boxShadow = "none";
+      this.div.style.cursor = "default";
     }
   }
 }
